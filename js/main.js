@@ -72,7 +72,7 @@ function main() {
     this.load.image('confetti5', 'img/confetti5.png');
     this.load.image('confetti6', 'img/confetti6.png');
     this.load.image('confetti7', 'img/confetti7.png');
-    this.load.image('counter', 'img/counter.png');
+    // this.load.image('counter', 'img/counter.png');
     this.load.image('crate', 'img/crate.png');
     this.load.image('fireplace', 'img/fireplace.png');
     this.load.image('flowers', 'img/flowers.png');
