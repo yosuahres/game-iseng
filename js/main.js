@@ -62,8 +62,8 @@ function main() {
       frameHeight: Config.JUSTIN_SPRITE_HEIGHT
     });
 
-    this.load.image('acadia', 'img/acadia.png');
-    this.load.image('bkb', 'img/bkb.png');
+    // this.load.image('acadia', 'img/image1.jpeg');
+    // this.load.image('bkb', 'img/image2.jpeg');
     this.load.image('bookcase', 'img/bookcase.png');
     this.load.image('confetti1', 'img/confetti1.png');
     this.load.image('confetti2', 'img/confetti2.png');
@@ -79,16 +79,16 @@ function main() {
     this.load.image('gift', 'img/gift.png');
     this.load.image('glow', 'img/glow.png');
     this.load.image('grinchfaint', 'img/grinchfaint.png');
-    this.load.image('hamilton', 'img/hamilton.png');
+    // this.load.image('hamilton', 'img/hamilton.png');
     this.load.image('heart', 'img/heart.png');
-    this.load.image('liam', 'img/liam.png');
+    // this.load.image('liam', 'img/liam.png');
     this.load.image('pathmarker', 'img/pathmarker.png');
     this.load.image('piano', 'img/piano.png');
     this.load.image('rugleft', 'img/rugleft.png');
     this.load.image('rugmiddle', 'img/rugmiddle.png');
     this.load.image('rugtop', 'img/rugtop.png');
     this.load.image('rugtopleft', 'img/rugtopleft.png');
-    this.load.image('fam', 'img/fam.png');
+    // this.load.image('fam', 'img/fam.png');
     this.load.image('wallright', 'img/wallright.png');
     this.load.image('walltop', 'img/walltop.png');
     this.load.image('walltopright', 'img/walltopright.png');
