@@ -3,6 +3,7 @@ class DirectorState {
     this.directorKeys_ = directorKeys;
     this.isProductionRunning_ = false;
     this.isVictorious_ = false;
+    this.isGiftReady_ = false;
   }
 
   markVictorious() {
@@ -21,9 +22,17 @@ class DirectorState {
     return this.isProductionRunning_;
   }
 
+  setGiftReady(val) {
+    this.isGiftReady_ = val;
+  }
+
+  isGiftReady() {
+    return this.isGiftReady_;
+  }
+
   getRunnerTimeScale() {
     return this.directorKeys_.space.isDown
-        ? Config.GRID_RUNNER_FAST_MULTIPLIER
-        : 1;
+      ? Config.GRID_RUNNER_FAST_MULTIPLIER
+      : 1;
   }
 }

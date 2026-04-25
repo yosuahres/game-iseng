@@ -1,17 +1,10 @@
 class Director {
-  constructor(
-      scene,
-      grid,
-      pathery,
-      santa,
-      grinch,
-      gift,
-      directorState) {
+  constructor(scene, grid, pathery, santa, grinch, gift, directorState) {
     this.scene_ = scene;
     this.grid_ = grid;
     this.pathery_ = pathery;
     this.santa_ = santa;
-    this.grinch_ = grinch;
+    // grinch intentionally unused
     this.gift_ = gift;
     this.directorState_ = directorState;
   }
@@ -21,16 +14,11 @@ class Director {
   }
 
   toggleProductionRunning() {
-    if (this.directorState_.isVictorious()) {
-      // Disable toggling the production if we're victorious.
-      return;
-    }
-
+    if (this.directorState_.isVictorious()) return;
     if (this.directorState_.isProductionRunning()) {
       this.endProduction_();
       return;
     }
-
     this.startProduction_();
   }
 
@@ -44,32 +32,26 @@ class Director {
     }
 
     this.directorState_.setIsProductionRunning(true);
+    this.gift_.follow(this.santa_.getRunSprite());
+
     const santaRun = this.santa_.run(path);
+
+    // When Santa reaches the tree tile, place the gift there
     santaRun.targetPromise.then(() => {
       this.gift_.moveToTarget();
     });
+
+    // When Santa finishes running off screen, production ends
+    // and we signal that the gift is ready to pick up
     santaRun.finishPromise.then(() => {
-      const grinchRun = this.grinch_.run(path);
-      grinchRun.targetPromise.then(() =>
-          this.gift_.follow(this.grinch_.getRunSprite()));
-      grinchRun.finishPromise.then(() => this.endProduction_());
-      grinchRun.faintPromise.then(() => this.markVictorious_());
+      this.endProduction_();
+      this.directorState_.setGiftReady(true);
     });
-    this.gift_.follow(this.santa_.getRunSprite());
   }
 
   endProduction_() {
     this.directorState_.setIsProductionRunning(false);
-
     this.santa_.hide();
-    this.grinch_.hide();
-    this.gift_.hide();
-  }
-
-  markVictorious_() {
-    this.directorState_.markVictorious();
-
-    this.grinch_.faint();
-    this.gift_.moveToVictory();
+    // gift stays visible on tree — do NOT hide it
   }
 }

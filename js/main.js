@@ -4,6 +4,9 @@ function main() {
     type: Phaser.AUTO,
     width: Config.CAMERA_WIDTH_PX,
     height: Config.CAMERA_HEIGHT_PX,
+    input: {
+      activePointers: 4
+    },
     physics: {
       default: 'arcade'
     },
@@ -14,8 +17,10 @@ function main() {
     }
   };
   const game = new Phaser.Game(config);
+
   var blockList;
   var cursorKeys;
+  var director;
   var directorKeys;
   var directorState;
   var gift;
@@ -26,6 +31,10 @@ function main() {
   var santa;
   var victoryCutscene;
   var world;
+
+  const morningMessages = [
+    "HAVEEE A WONDERFULL DAAYYYY YAAAA, SMILEE ALWAYSSS",
+  ];
 
   function preloadFn() {
     this.load.spritesheet('girl', 'img/patty.png', {
@@ -89,10 +98,51 @@ function main() {
   }
 
   function createFn() {
-    cursorKeys = this.input.keyboard.createCursorKeys();
-    directorKeys = this.input.keyboard.addKeys('space');
+    directorState = new DirectorState();
 
-    directorState = new DirectorState(directorKeys);
+    const keyboardCursorKeys = this.input.keyboard.createCursorKeys();
+    const keyboardDirectorKeys = this.input.keyboard.addKeys('space');
+
+    if (!virtualJoystick) {
+      initVirtualJoystick();
+    }
+
+    cursorKeys = {
+      up: {
+        get isDown() {
+          return keyboardCursorKeys.up.isDown ||
+              (virtualJoystick && virtualJoystick.getCursorKeys().up.isDown);
+        }
+      },
+      down: {
+        get isDown() {
+          return keyboardCursorKeys.down.isDown ||
+              (virtualJoystick && virtualJoystick.getCursorKeys().down.isDown);
+        }
+      },
+      left: {
+        get isDown() {
+          return keyboardCursorKeys.left.isDown ||
+              (virtualJoystick && virtualJoystick.getCursorKeys().left.isDown);
+        }
+      },
+      right: {
+        get isDown() {
+          return keyboardCursorKeys.right.isDown ||
+              (virtualJoystick && virtualJoystick.getCursorKeys().right.isDown);
+        }
+      }
+    };
+
+    directorKeys = {
+      space: {
+        get isDown() {
+          return keyboardDirectorKeys.space.isDown ||
+              (virtualJoystick && virtualJoystick.getButtonState('produce'));
+        }
+      }
+    };
+
     world = new World(this);
     grid = new Grid(this, world);
     pathery = new Pathery(world, grid);
@@ -104,19 +154,9 @@ function main() {
     director = new Director(
         this, grid, pathery, santa, grinch, gift, directorState);
     victoryCutscene = new VictoryCutscene(
-        this,
-        patty,
-        gift,
-        directorState,
-        [
-          'confetti1',
-          'confetti2',
-          'confetti3',
-          'confetti4',
-          'confetti5',
-          'confetti6',
-          'confetti7'
-        ]);
+        this, patty, gift, directorState,
+        ['confetti1','confetti2','confetti3','confetti4',
+         'confetti5','confetti6','confetti7']);
     instructions = new Instructions(this);
 
     this.input.keyboard.on('keydown', function(e) {
@@ -131,47 +171,106 @@ function main() {
       }
     });
 
-    resetWithPresetPuzzle(this /* scene */);
+    // Wire up pickup button and morning overlay — inside createFn so
+    // directorState, gift, grid, patty are all in scope.
+    const pickupBtn = document.getElementById('pickup-btn');
+    const morningOverlay = document.getElementById('morning-overlay');
+    const morningClose = document.getElementById('morning-close');
+    const morningText = document.getElementById('morning-text');
+
+    if (pickupBtn) {
+      pickupBtn.addEventListener('click', function() {
+        pickupBtn.style.display = 'none';
+        directorState.setGiftReady(false);
+
+        // Move gift to Patty's feet so VictoryCutscene proximity check passes
+        const pattySprite = patty.getSprite();
+        gift.getSprite().x = pattySprite.x;
+        gift.getSprite().y = pattySprite.y;
+        gift.getSprite().visible = true;
+
+        // Mark victorious — VictoryCutscene.update() will detect Patty near gift
+        directorState.markVictorious();
+
+        // Show morning message after short delay so confetti fires first
+        const msg = morningMessages[
+          Math.floor(Math.random() * morningMessages.length)
+        ];
+        setTimeout(function() {
+          if (window.triggerMorningOverlay) {
+            window.triggerMorningOverlay(msg);
+          }
+        }, 800);
+      });
+    }
+
+    if (morningClose) {
+      morningClose.addEventListener('click', function() {
+        morningOverlay.style.display = 'none';
+      });
+    }
+
+    resetWithPresetPuzzle(this);
   }
 
   function updateFn() {
+    if (virtualJoystick && virtualJoystick.checkButtonPress('produce')) {
+      director.toggleProductionRunning();
+    }
+    if (virtualJoystick && virtualJoystick.checkButtonPress('speed')) {
+      director.toggleProductionRunning();
+    }
+    if (virtualJoystick && virtualJoystick.checkButtonPress('instructions')) {
+      instructions.toggleVisibility();
+    }
+
     blockList.update(patty.getSprite(), cursorKeys);
-    // Patty must move after checking for collisions to allow other sprites to
-    // check for overlaps on the next update.
     world.checkCollisions(patty.getSprite());
 
     patty.update();
     santa.update();
-    grinch.update();
+    // grinch removed from update
     gift.update();
     victoryCutscene.update();
+
+    checkPickupProximity();
+  }
+
+  function checkPickupProximity() {
+    const pickupBtn = document.getElementById('pickup-btn');
+    if (!pickupBtn) return;
+
+    if (!directorState.isGiftReady() || directorState.isVictorious()) {
+      pickupBtn.style.display = 'none';
+      return;
+    }
+
+    const target = grid.getTargetTile();
+    const treeCenter = grid.getTileCenter(target.x, target.y);
+    const pattySprite = patty.getSprite();
+    const dx = pattySprite.x - treeCenter.x;
+    const dy = pattySprite.y - treeCenter.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    pickupBtn.style.display =
+        (dist < Config.VICTORY_GIFT_PATTY_PROXIMITY * 2) ? 'block' : 'none';
   }
 
   function resetWithPresetPuzzle(scene) {
-    if (directorState.isVictorious()) {
-      // Don't reset if we're victorious.
-      return;
-    }
-    resetPuzzle(
-        scene,
-        4 /* startY */,
-        1 /* endY */,
-        6 /* targetX */,
-        1 /* targetY */,
-        3 /* pattyX */,
-        4 /* pattyY */,
-        40 /* grinchMaxStamina */);
+    if (directorState.isVictorious()) return;
+    resetPuzzle(scene, 4, 1, 6, 1, 3, 4, 40);
   }
 
   function resetPuzzle(
       scene, startY, endY, targetX, targetY, pattyX, pattyY, grinchMaxStamina) {
     world.reset();
     grid.reset(startY, endY, {x: targetX, y: targetY});
-    
+
     const rightWallGapCenter = grid.getTileCenter(0, endY);
     world.renderRightWall(
         rightWallGapCenter.y - Config.GRID_TILE_SIZE_PX / 2,
         rightWallGapCenter.y + Config.GRID_TILE_SIZE_PX / 2);
+
     blockList.reset();
     blockList.addBlockInGrid(1, 2, 'crate');
     blockList.addBlockInGrid(2, 4, 'crate');
@@ -182,8 +281,7 @@ function main() {
     blockList.addBlockInGrid(9, 4, 'crate');
 
     createBlinkAnimation(scene, 'justinBlinking');
-    const justin = blockList.addBlockOffGrid(
-        0, -1, 'justinblink', 'justinBlinking');
+    const justin = blockList.addBlockOffGrid(0, -1, 'justinblink', 'justinBlinking');
 
     santa.hide();
     grinch.reset(grinchMaxStamina);
@@ -193,10 +291,8 @@ function main() {
 
     const pattyBounds = patty.getSprite().getBounds();
     if (world.anyObstacleInRegion(
-        pattyBounds.centerX,
-        pattyBounds.centerY,
-        pattyBounds.width,
-        pattyBounds.height)) {
+        pattyBounds.centerX, pattyBounds.centerY,
+        pattyBounds.width, pattyBounds.height)) {
       patty.teleportTo(pattyX, pattyY);
     }
   }
@@ -204,18 +300,11 @@ function main() {
   function createBlinkAnimation(scene, animationKey) {
     const frames = [];
     for (var i = 0; i < Config.JUSTIN_BLINKING_RATIO; i++) {
-      frames.push({
-        key: 'justinblink',
-        frame: 0
-      });
+      frames.push({ key: 'justinblink', frame: 0 });
     }
-    frames.push({
-      key: 'justinblink',
-      frame: 1
-    });
-
+    frames.push({ key: 'justinblink', frame: 1 });
     scene.anims.create({
-      key: 'justinBlinking',
+      key: animationKey,
       frames: frames,
       frameRate: Config.JUSTIN_BLINKING_SPEED,
       repeat: -1

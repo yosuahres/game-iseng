@@ -15,7 +15,7 @@ class VictoryCutscene {
     this.cathyText_ = scene.add.text(
         53,
         185,
-        'Yay! Tell Cathy you solved it!');
+        'KICAAAUU KICAAUU KICAAUU MANIAAAA');
     this.cathyText_.setColor('#ffffcc');
     this.cathyText_.setFontSize(30);
     this.cathyText_.setStroke('black', 5);

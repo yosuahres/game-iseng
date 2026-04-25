@@ -3,93 +3,82 @@ class Instructions {
     this.scene_ = scene;
     this.instructionTexts_ = [];
 
+    // Use actual game canvas dimensions so instructions scale with the canvas
+    // whether it's desktop, tablet, or phone.
+    this.W = scene.scale ? scene.scale.width  : Config.WORLD_WIDTH_PX;
+    this.H = scene.scale ? scene.scale.height : Config.WORLD_HEIGHT_PX;
+
     this.addAllInstructions_();
 
+    // Full-screen dimming backdrop drawn in canvas-space (0,0 to W,H)
     this.backdrop_ = scene.add.graphics();
     this.backdrop_.fillStyle(0x000000);
-    this.backdrop_.fillRect(-10000, -10000, 20000, 20000);
-    this.backdrop_.alpha = 0.6;
+    this.backdrop_.fillRect(0, 0, this.W, this.H);
+    this.backdrop_.alpha = 0.72;
     this.backdrop_.depth = Depths.INSTRUCTIONS_BACKDROP;
     this.backdrop_.visible = false;
   }
 
   toggleVisibility() {
     this.backdrop_.visible = !this.backdrop_.visible;
-    this.instructionTexts_.forEach(t => {t.visible = !t.visible;});
+    this.instructionTexts_.forEach(t => { t.visible = !t.visible; });
   }
 
   addAllInstructions_() {
     const f = this.addText_.bind(this);
-    const normalColor = 'white';
-    const pattyColor = '#d07b4c';
-    const pattyStrokeColor = '#071b09';
-    const keyColor = 'orange';
-    const giftColor = 'yellow';
-    const santaColor = '#ec0000';
-    const grinchColor = '#6bef08';
-    const lineHeight = 25;
-    
-    var left = Config.WORLD_WIDTH_PX / 2 - 270;
-    var top = Config.WORLD_HEIGHT_PX / 2 + 60;
+    const W = this.W;
+    const H = this.H;
 
-    // Show instructions at the top.
-    f('Help', left, top, normalColor);
-    f('Patty', left + 61 - 3, top - 3, pattyColor).setStroke(pattyStrokeColor, 6);
-    f('get her', left + 61 + 71, top, normalColor);
-    f('gift', left + 61 + 71 + 95, top, giftColor);
-    f('from', left + 61 + 71 + 95 + 58, top, normalColor);
-    f('Santa', left + 61 + 71 + 95 + 58 + 61, top, santaColor);
-    f('!', left + 61 + 71 + 95 + 58 + 61 + 65, top, normalColor);
+    const normalColor  = 'white';
+    const pattyColor   = '#d07b4c';
+    const pattyStroke  = '#071b09';
+    const keyColor     = 'orange';
+    const giftColor    = 'yellow';
+    const santaColor   = '#ec0000';
+    const grinchColor  = '#6bef08';
 
-    top += lineHeight;
-    f('Don\'t let the', left, top, normalColor);
-    f('Grinch', left + 170, top, grinchColor);
-    f('steal it.', left + 170 + 86, top, normalColor);
+    // ── Font size: scales between 11px (320px wide) and 20px (650px wide) ──
+    const baseFontSize = Math.max(11, Math.min(20, Math.round(W * 20 / 650)));
+    const lineH        = Math.round(baseFontSize * 1.55);
 
-    top += 2 * lineHeight;
-    f('- Move', left, top, normalColor);
-    f('Patty', left + 83 - 3, top - 3, pattyColor).setStroke(pattyStrokeColor, 6);
-    f('with the', left + 83 + 71, top, normalColor);
-    f('arrow keys', left + 83 + 71 + 107, top, keyColor);
-    f('.', left + 83 + 71 + 107 + 125, top, normalColor);
-    
-    top += lineHeight;
-    f('- Press', left, top, normalColor);
-    f('G', left + 95, top, keyColor);
-    f('to make', left + 95 + 22, top, normalColor);
-    f('Santa', left + 95 + 22 + 95, top, santaColor);
-    f('bring the', left + 95 + 22 + 95 + 71, top, normalColor);
-    f('gift', left + 95 + 22 + 95 + 71 + 119, top, giftColor);
-    f('!', left + 95 + 22 + 95 + 71 + 119 + 53, top, normalColor);
+    // ── Layout: centre the instruction block horizontally ───────────────────
+    // The widest line is roughly 540px at font-size 20, so scale proportionally
+    const blockW = Math.round(540 * baseFontSize / 20);
+    const left   = Math.round((W - blockW) / 2);
 
-    top += lineHeight;
-    f('- Hold', left, top, normalColor);
-    f('Space', left + 82, top, keyColor);
-    f('to make', left + 82 + 70, top, normalColor);
-    f('Santa', left + 82 + 70 + 96, top, santaColor);
-    f('and the', left + 82 + 70 + 96 + 70, top, normalColor);
-    f('Grinch', left + 82 + 70 + 96 + 70 + 96, top, grinchColor);
+    // Vertical start: sit a bit below the vertical centre
+    let top = Math.round(H * 0.30);
 
-    top += lineHeight;
-    f('run faster.', left + 22, top, normalColor);
+    // Helper: column offset scaled to font size
+    const col = px => left + Math.round(px * baseFontSize / 20);
 
-    top += 2 * lineHeight;
-    f('Press', left, top, normalColor);
-    f('I', left + 71, top, keyColor);
-    f('to hide these instructions.', left + 93, top, normalColor);
+    // ── Line 1: "Help Patty get her gift from Santa!" ────────────────────────
+    f('Pencet produce',   col(0),   top, normalColor, baseFontSize);
+    top += lineH;
 
-    left = 14;
-    top = Config.WORLD_HEIGHT_PX - lineHeight;
-    f('Press', left, top, normalColor, true);
-    f('I', left + 71, top, keyColor, true);
-    f('for instructions.', left + 93, top, normalColor, true);
+    // ── Line 2: "Don't let the Grinch steal it." ────────────────────────────
+    f('Tunggu santa tarok kado', col(0),   top, normalColor, baseFontSize);
+    top += lineH * 2;
+
+    // ── Line 3: "- Move Patty with the arrow keys." ──────────────────────────
+    f('Mendekat ke pohon',      col(0),   top, normalColor, baseFontSize);
+    top += lineH;
+
+    // ── Line 4: "- Press G to make Santa bring the gift!" ───────────────────
+    f('Lalu tekan tombol plis',  col(0),   top, normalColor, baseFontSize);
+    top += lineH;
+
+    const hintSize = Math.max(10, Math.round(baseFontSize * 0.85));
+    const hintY = H - Math.round(hintSize * 2.2);
+    f('Hello',            14,                        hintY, normalColor, hintSize, true);
+    f('Natalia',                14 + Math.round(68 * hintSize / 20), hintY, keyColor,    hintSize, true);
   }
 
-  addText_(s, x, y, color, initiallyVisible) {
+  addText_(s, x, y, color, fontSize, initiallyVisible) {
     const text = this.scene_.add.text(x, y, s);
     text.depth = Depths.INSTRUCTIONS_TEXT;
     text.setColor(color);
-    text.setFontSize(20);
+    text.setFontSize(fontSize || 20);
     text.visible = !!initiallyVisible;
     this.instructionTexts_.push(text);
     return text;
